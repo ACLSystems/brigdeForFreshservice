@@ -1,0 +1,29 @@
+{
+  "name": "brigdeforfreshservice",
+  "version": "1.0.0",
+  "description": "ACL Systems REST API Bridge for Freshservice",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "nodemon": "^1.19.0"
+  },
+  "scripts": {
+    "test": "NODE_ENV=development nodemon index.js",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ACLSystems/brigdeForFreshservice.git"
+  },
+  "author": "Arturo Castro",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ACLSystems/brigdeForFreshservice/issues"
+  },
+  "homepage": "https://github.com/ACLSystems/brigdeForFreshservice#readme"
+}
