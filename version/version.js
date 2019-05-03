@@ -1,4 +1,4 @@
-const version = '1.0.0';
+const version = '1.0.5';
 
 module.exports = {
 	app: 'bridgeForFreshservice',

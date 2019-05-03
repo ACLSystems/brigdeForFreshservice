@@ -5,6 +5,7 @@
 const HTTPRequest = require('request-promise-native');
 const logger 			= require('../shared/winston-logger');
 const urlencode 	= require('urlencode');
+const version 		= require('../version/version');
 
 module.exports = {
 	async createTicket(req,res) {
@@ -12,7 +13,7 @@ module.exports = {
 		const email 		= req.body.email 			|| process.env.EMAIL;
 		const uri 			= process.env.URI 		|| req.body.uri;
 		const apiKey 		= process.env.APIKEY 	|| req.body.apikey;
-		const assetContinue = req.body.assetContinue || true;
+		const assetContinue = req.body.assetContinue || false;
 
 		const tags 			= req.body.tags	|| ['monitoreo','PRTG'];
 		const source 		= Number.parseInt(process.env.SOURCE) 	|| Number.parseInt(req.body.source) 	|| 12;
@@ -22,6 +23,7 @@ module.exports = {
 
 		const assetURLEncoded = urlencode(req.body.asset) || null;
 		const auth 			= new Buffer.from(apiKey + ':X');
+		const now 			= new Date();
 
 		var options = {
 			method 	: 'GET',
@@ -35,7 +37,7 @@ module.exports = {
 		try {
 			let assetData = JSON.parse(await HTTPRequest(options));
 			options.body = {
-				description			: req.body.description,
+				description			: req.body.description + '<br><br><p><small>' + version.app + '/' + version.version + ' @' + version.year + ' ' + version.contact + '</small></p>',
 				email 					: email,
 				subject					: req.body.subject,
 				priority				: priority,
@@ -68,11 +70,23 @@ module.exports = {
 				delete options.body.due_by;
 			} else {
 				options.body.due_by = new Date(options.body.due_by);
+				if(options.body.due_by < now) {
+					res.status(409).json({
+						'message': '-due_by- debe ser mayor que la hora de creación del ticket (mayor a este momento)'
+					});
+					return;
+				}
 			}
 			if(!options.body.fr_due_by) {
 				delete options.body.fr_due_by;
 			} else {
 				options.body.fr_due_by = new Date(options.body.fr_due_by);
+				if(options.body.fr_due_by < now) {
+					res.status(409).json({
+						'message': '-fr_due_by- debe ser mayor que la hora de creación del ticket (mayor a este momento)'
+					});
+					return;
+				}
 			}
 			if(!options.body.category) {
 				delete options.body.category;
@@ -97,6 +111,9 @@ module.exports = {
 				options.body.group_id 			= assetData.group_id;
 				try {
 					let ticketResponse = await HTTPRequest(options);
+					ticketResponse.uri = uri;
+					ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
+					ticketResponse.created = now.toString();
 					res.status(200).json(ticketResponse);
 				} catch (err) {
 					res.status(err.statusCode).json(err);
@@ -105,7 +122,7 @@ module.exports = {
 			} else if(assetData.assets.length === 0) {
 				if(assetContinue) {
 					try {
-						delete options.associate_ci;
+						delete options.body.associate_ci;
 						let ticketResponse = await HTTPRequest(options);
 						res.status(200).json(ticketResponse);
 					} catch (err) {
