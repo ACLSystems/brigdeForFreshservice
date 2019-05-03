@@ -7,7 +7,8 @@ module.exports = {
 			app: version.app,
 			version: version.version,
 			vendor: version.vendor,
-			year: version.year
+			year: version.year,
+			contact: version.contact
 		});
 	}
 };

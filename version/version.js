@@ -5,6 +5,7 @@ module.exports = {
 	version: version,
 	year: '2019',
 	vendor: 'ACL Systems SA de CV',
+	contact: 'servicedesk@aclsystems.mx',
 	numVersion: version.replace(/\./g, '')
 	// se utiliza semver
 };
