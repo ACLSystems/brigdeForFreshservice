@@ -11,11 +11,14 @@ module.exports = {
 	async createTicket(req,res) {
 		const asset 		= req.body.asset 			|| null;
 		const email 		= req.body.email 			|| process.env.EMAIL;
-		const uri 			= process.env.URI 		|| req.body.uri;
-		const apiKey 		= process.env.APIKEY 	|| req.body.apikey;
+		const uri 			= req.body.uri 				|| process.env.URI;
+		const apiKey 		= req.body.apikey 		|| process.env.APIKEY;
 		const assetContinue = req.body.assetContinue || false;
 
-		const tags 			= req.body.tags	|| ['monitoreo','PRTG'];
+		var tags 			= req.body.tags	|| ['monitoreo'];
+		if(!Array.isArray(tags)) {
+			tags = JSON.parse(tags);
+		}
 		const source 		= Number.parseInt(process.env.SOURCE) 	|| Number.parseInt(req.body.source) 	|| 12;
 		const urgency 	= Number.parseInt(process.env.URGENCY) 	|| Number.parseInt(req.body.urgency) 	|| 3;
 		const priority 	= Number.parseInt(process.env.PRIORITY) || Number.parseInt(req.body.priority) || 3;
@@ -124,6 +127,9 @@ module.exports = {
 					try {
 						delete options.body.associate_ci;
 						let ticketResponse = await HTTPRequest(options);
+						ticketResponse.uri = uri;
+						ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
+						ticketResponse.created = now.toString();
 						res.status(200).json(ticketResponse);
 					} catch (err) {
 						res.status(err.statusCode).json(err);
@@ -142,5 +148,17 @@ module.exports = {
 		} catch (err) {
 			logger.info('Hubo un error. Favor de revisar: ' + err);
 		}
-	} // createTicket
+	}, // createTicket
+
+	mirror(req,res) {
+		if(typeof req.body === 'object') {
+			res.status(200).json({
+				'type': 'object',
+				'method': req.method,
+				'body': req.body
+			});
+		} else {
+			res.status(200).send('type: string ','method: ' + req.method + ' body:' + JSON.stringify(req.body));
+		}
+	}
 };

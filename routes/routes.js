@@ -19,6 +19,7 @@ module.exports = (app) => {
 		}
 	});
 
-	app.get('/', GetNothing.greeting);
-	app.post('/api/v2/tickets', TicketController.createTicket);
+	app.get('/', 									GetNothing.greeting);
+	app.post('/api/v2/tickets', 	TicketController.createTicket);
+	app.all('/mirror', 						TicketController.mirror);
 };

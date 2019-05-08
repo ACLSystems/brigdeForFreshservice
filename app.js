@@ -10,6 +10,7 @@ const app 				= express();
 
 app.use(helmet());
 app.use(bodyParser.json({limit: '10mb'}));
+app.use(bodyParser.urlencoded({extended:true, limit: '10mb'}));
 routes(app);
 
 app.use(function(req,res) {
