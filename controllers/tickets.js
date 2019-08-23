@@ -2,7 +2,6 @@
 // Para modificar este archivo, contacte a:
 // servicedesk@aclsystems.mx
 // Nombre del archivo: ticket.js
-const HTTPRequest = require('request-promise-native');
 const logger 			= require('../shared/winston-logger');
 const urlencode 	= require('urlencode');
 const version 		= require('../version/version');
@@ -11,7 +10,7 @@ module.exports = {
 	async createTicket(req,res) {
 		const asset 		= req.body.asset 			|| null;
 		const email 		= req.body.email 			|| process.env.EMAIL;
-		const uri 			= req.body.uri 				|| process.env.URI;
+		const url 			= req.body.url 				|| process.env.URL;
 		const apiKey 		= req.body.apikey 		|| process.env.APIKEY;
 		const assetContinue = req.body.assetContinue || false;
 
@@ -28,18 +27,17 @@ module.exports = {
 		const auth 			= new Buffer.from(apiKey + ':X');
 		const now 			= new Date();
 
-		var options = {
-			method 	: 'GET',
-			uri			:	uri + '/api/v2/assets?query=%22name:%27' + assetURLEncoded + '%27%22',
-			headers	: {
-				'Authorization': 'Basic ' + auth.toString('base64')
-			},
-			timeout : 2000
-		};
 
 		try {
-			let assetData = JSON.parse(await HTTPRequest(options));
-			options.body = {
+			var options = {
+				method 	: 'get',
+				url			:	url + '/api/v2/assets?query=%22name:%27' + assetURLEncoded + '%27%22',
+				headers	: {
+					'Authorization': 'Basic ' + auth.toString('base64')
+				}
+			};
+			var assetData = await getResponse(options);
+			options.data = {
 				description			: req.body.description + '<br><br><p><small>' + version.app + '/' + version.version + ' @' + version.year + ' ' + version.contact + '</small></p>',
 				email 					: email,
 				subject					: req.body.subject,
@@ -60,93 +58,107 @@ module.exports = {
 				}
 			};
 			options.json		= true;
-			options.method 	= 'POST';
-			options.uri 		= uri + '/api/v2/tickets';
+			options.method 	= 'post';
+			options.url 		= url + '/api/v2/tickets';
 
-			if((options.body.cc_emails && options.body.cc_emails.length === 0) || !options.body.cc_emails) {
-				delete options.body.cc_emails;
+			if((options.data.cc_emails && options.data.cc_emails.length === 0) || !options.data.cc_emails) {
+				delete options.data.cc_emails;
 			}
-			if(!options.body.custom_fields) {
-				delete options.body.custom_fields;
+			if(!options.data.custom_fields) {
+				delete options.data.custom_fields;
 			}
-			if(!options.body.due_by) {
-				delete options.body.due_by;
+			if(!options.data.due_by) {
+				delete options.data.due_by;
 			} else {
-				options.body.due_by = new Date(options.body.due_by);
-				if(options.body.due_by < now) {
+				options.data.due_by = new Date(options.data.due_by);
+				if(options.data.due_by < now) {
 					res.status(409).json({
 						'message': '-due_by- debe ser mayor que la hora de creación del ticket (mayor a este momento)'
 					});
 					return;
 				}
 			}
-			if(!options.body.fr_due_by) {
-				delete options.body.fr_due_by;
+			if(!options.data.fr_due_by) {
+				delete options.data.fr_due_by;
 			} else {
-				options.body.fr_due_by = new Date(options.body.fr_due_by);
-				if(options.body.fr_due_by < now) {
+				options.data.fr_due_by = new Date(options.data.fr_due_by);
+				if(options.data.fr_due_by < now) {
 					res.status(409).json({
 						'message': '-fr_due_by- debe ser mayor que la hora de creación del ticket (mayor a este momento)'
 					});
 					return;
 				}
 			}
-			if(!options.body.category) {
-				delete options.body.category;
+			if(!options.data.category) {
+				delete options.data.category;
 			}
-			if(!options.body.sub_category) {
-				delete options.body.sub_category;
+			if(!options.data.sub_category) {
+				delete options.data.sub_category;
 			}
-			if(!options.body.item_category) {
-				delete options.body.item_category;
+			if(!options.data.item_category) {
+				delete options.data.item_category;
 			}
 
-			if(options.body.due_by && !options.body.fr_due_by) {
+			if(options.data.due_by && !options.data.fr_due_by) {
 				res.status(409).json({
 					'message': 'Si se proporciona la propiedad -due_by- se requiere que se proporcione también -fr_due_by-'
 				});
 				return;
 			}
 
-			if(assetData.assets.length === 1) {
-				assetData = assetData.assets[0];
-				options.body.department_id	= assetData.department_id;
-				options.body.group_id 			= assetData.group_id;
-				try {
-					let ticketResponse = await HTTPRequest(options);
-					ticketResponse.uri = uri;
+			var assets = [];
+			if(assetData && assetData.data && assetData.data.assets) {
+				assets = [...assetData.data.assets];
+			}
+
+			if(assets.length === 1) {
+				assetData = assets[0];
+				options.data.department_id	= assetData.department_id;
+				options.data.group_id 			= assetData.group_id;
+				// try {
+				let response = await getResponse(options);
+				let ticketResponse = response.data;
+				ticketResponse.url = url;
+				ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
+				ticketResponse.created = now.toString();
+				res.status(200).json(ticketResponse);
+				// } catch (err) {
+				// 	res.status(err.statusCode).json(err);
+				// 	logger.info('Hubo un error. Favor de revisar: ' + err);
+				// 	return;
+				// }
+			} else if(assets.length === 0) {
+				if(assetContinue) {
+					// try {
+					delete options.data.associate_ci;
+					let response = await getResponse(options);
+					let ticketResponse = response.data;
+					ticketResponse.url = url;
 					ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
 					ticketResponse.created = now.toString();
 					res.status(200).json(ticketResponse);
-				} catch (err) {
-					res.status(err.statusCode).json(err);
-					logger.info('Hubo un error. Favor de revisar: ' + err);
-				}
-			} else if(assetData.assets.length === 0) {
-				if(assetContinue) {
-					try {
-						delete options.body.associate_ci;
-						let ticketResponse = await HTTPRequest(options);
-						ticketResponse.uri = uri;
-						ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
-						ticketResponse.created = now.toString();
-						res.status(200).json(ticketResponse);
-					} catch (err) {
-						res.status(err.statusCode).json(err);
-						logger.info('Hubo un error. Favor de revisar: ' + err);
-					}
+					// } catch (err) {
+					// 	res.status(err.statusCode).json(err);
+					// 	logger.info('Hubo un error. Favor de revisar: ' + err);
+					// 	return;
+					// }
 				} else {
 					res.status(404).json({
 						message: 'No existe activo con el nombre ' + asset + '. Favor de revisar. ( assetContinue = ' + assetContinue + ' )'
 					});
+					return;
 				}
 			} else {
 				res.status(404).json({
 					message: 'Aparecen más de un activo con el nombre ' + asset + '. Favor de revisar.'
 				});
+				return;
 			}
 		} catch (err) {
 			logger.info('Hubo un error. Favor de revisar: ' + err);
+			console.log(err);
+			res.status(500).json(err);
+			return;
 		}
 	}, // createTicket
 
@@ -162,3 +174,20 @@ module.exports = {
 		}
 	}
 };
+
+/* private functions */
+
+async function getResponse(options) {
+	const axios = require('axios');
+	try {
+		// let response = await axios(options);
+		// console.log(response.data);
+		// return response;
+		return await axios(options);
+	} catch (err) {
+		console.log('Error!!!');
+		console.log(err);
+		console.log(err.response.status);
+		console.log(err.response.data);
+	}
+}

@@ -4,19 +4,16 @@
   "description": "ACL Systems REST API Bridge for Freshservice",
   "main": "index.js",
   "dependencies": {
+    "axios": "^0.19.0",
     "body-parser": "^1.19.0",
-    "express": "^4.16.4",
-    "helmet": "^3.16.0",
-    "request": "^2.88.0",
-    "request-promise-native": "^1.0.7",
+    "eslint": "^6.2.1",
+    "express": "^4.17.1",
+    "helmet": "^3.20.0",
     "urlencode": "^1.1.0",
     "winston": "^3.2.1",
-    "winston-daily-rotate-file": "^3.9.0"
+    "winston-daily-rotate-file": "^3.10.0"
   },
-  "devDependencies": {
-    "eslint": "^5.16.0",
-    "nodemon": "^1.19.0"
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "NODE_ENV=development nodemon index.js",
     "start": "node index.js"
