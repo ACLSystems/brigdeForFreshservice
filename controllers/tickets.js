@@ -14,6 +14,9 @@ module.exports = {
 		const apiKey 		= req.body.apikey 		|| process.env.APIKEY;
 		const assetContinue = req.body.assetContinue || false;
 
+		console.log('url');
+		console.log(url);
+
 		var tags 			= req.body.tags	|| ['monitoreo'];
 		if(!Array.isArray(tags)) {
 			tags = JSON.parse(tags);
@@ -185,9 +188,22 @@ async function getResponse(options) {
 		// return response;
 		return await axios(options);
 	} catch (err) {
+		const sender = process.env.NODE_SENDER_EMAIL;
+		const ticket_email = version.contact;
+		const key = process.env.NODE_SENDER_KEY;
+
+		const send = require('gmail-send')({
+			user: sender,
+			pass: key,
+			to: ticket_email,
+			subject: 'Error en Bridge ' + version.version,
+			text: err
+		});
 		console.log('Error!!!');
 		console.log(err);
 		console.log(err.response.status);
 		console.log(err.response.data);
+		const result = await send();
+		console.log(result);
 	}
 }
