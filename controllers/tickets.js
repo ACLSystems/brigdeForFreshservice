@@ -14,9 +14,6 @@ module.exports = {
 		const apiKey 		= req.body.apikey 		|| process.env.APIKEY;
 		const assetContinue = req.body.assetContinue || false;
 
-		console.log('url');
-		console.log(url);
-
 		var tags 			= req.body.tags	|| ['monitoreo'];
 		if(!Array.isArray(tags)) {
 			tags = JSON.parse(tags);
@@ -118,21 +115,15 @@ module.exports = {
 				assetData = assets[0];
 				options.data.department_id	= assetData.department_id;
 				options.data.group_id 			= assetData.group_id;
-				// try {
 				let response = await getResponse(options);
 				let ticketResponse = response.data;
 				ticketResponse.url = url;
 				ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
 				ticketResponse.created = now.toString();
 				res.status(200).json(ticketResponse);
-				// } catch (err) {
-				// 	res.status(err.statusCode).json(err);
-				// 	logger.info('Hubo un error. Favor de revisar: ' + err);
-				// 	return;
-				// }
+				logger.info('Se generó un ticket: ' + ticketResponse);
 			} else if(assets.length === 0) {
 				if(assetContinue) {
-					// try {
 					delete options.data.associate_ci;
 					let response = await getResponse(options);
 					let ticketResponse = response.data;
@@ -140,25 +131,28 @@ module.exports = {
 					ticketResponse.createdBy = version.app + '/' + version.version + ' @' + version.year;
 					ticketResponse.created = now.toString();
 					res.status(200).json(ticketResponse);
-					// } catch (err) {
-					// 	res.status(err.statusCode).json(err);
-					// 	logger.info('Hubo un error. Favor de revisar: ' + err);
-					// 	return;
-					// }
+					logger.info('Se generó un ticket: ' + ticketResponse);
 				} else {
 					res.status(404).json({
 						message: 'No existe activo con el nombre ' + asset + '. Favor de revisar. ( assetContinue = ' + assetContinue + ' )'
 					});
+					logger.info('404: No existe activo con el nombre ' + asset + '. Favor de revisar. ( assetContinue = ' + assetContinue + ' )');
+					logger.info('Se intentó generar ticket:');
+					logger.info(options);
 					return;
 				}
 			} else {
 				res.status(404).json({
 					message: 'Aparecen más de un activo con el nombre ' + asset + '. Favor de revisar.'
 				});
+				logger.info('404: Aparecen más de un activo con el nombre ' + asset + '. Favor de revisar.');
+				logger.info('Se intentó generar ticket:');
+				logger.info(options);
 				return;
 			}
 		} catch (err) {
 			logger.info('Hubo un error. Favor de revisar: ' + err);
+			console.log('Hubo un error. Favor de revisar: ');
 			console.log(err);
 			res.status(500).json(err);
 			return;
@@ -183,9 +177,6 @@ module.exports = {
 async function getResponse(options) {
 	const axios = require('axios');
 	try {
-		// let response = await axios(options);
-		// console.log(response.data);
-		// return response;
 		return await axios(options);
 	} catch (err) {
 		const sender = process.env.NODE_SENDER_EMAIL;
@@ -201,8 +192,6 @@ async function getResponse(options) {
 		});
 		console.log('Error!!!');
 		console.log(err);
-		console.log(err.response.status);
-		console.log(err.response.data);
 		const result = await send();
 		console.log(result);
 	}

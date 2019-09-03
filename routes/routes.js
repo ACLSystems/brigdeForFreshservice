@@ -4,6 +4,7 @@
 // Nombre del archivo: routes/routes
 const GetNothing 				= require('../controllers/get_nothing');
 const TicketController	= require('../controllers/tickets');
+const Validate					= require('../middleware/validate');
 
 module.exports = (app) => {
 	app.all('/*', function(req, res, next) {
@@ -20,6 +21,9 @@ module.exports = (app) => {
 	});
 
 	app.get('/', 									GetNothing.greeting);
-	app.post('/api/v2/tickets', 	TicketController.createTicket);
+	app.post('/api/v2/tickets',
+		Validate.createTicket,
+		Validate.results,
+		TicketController.createTicket);
 	app.all('/mirror', 						TicketController.mirror);
 };
