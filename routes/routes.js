@@ -26,4 +26,5 @@ module.exports = (app) => {
 		Validate.results,
 		TicketController.createTicket);
 	app.all('/mirror', 						TicketController.mirror);
+	app.post('/api/v2/tickets/custom', TicketController.getTicket);
 };

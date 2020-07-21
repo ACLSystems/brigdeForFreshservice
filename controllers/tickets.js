@@ -159,6 +159,29 @@ module.exports = {
 		}
 	}, // createTicket
 
+	async getTicket(req,res) {
+		const url 			= req.body.url 		|| process.env.URL;
+		const apiKey 		= req.body.apikey || process.env.APIKEY;
+		const method		= req.body.method	|| 'get';
+		const auth 			= new Buffer.from(apiKey + ':X');
+		var options = {
+			method,
+			url,
+			headers	: {
+				'Authorization': 'Basic ' + auth.toString('base64')
+			}
+		};
+		console.log(options);
+		try {
+			const response = await getResponse(options);
+			console.log(response);
+			res.status(response.status).json(response.data);
+		} catch (e) {
+			res.status(500).json(e.error);
+		}
+
+	}, // getTicket
+
 	mirror(req,res) {
 		if(typeof req.body === 'object') {
 			res.status(200).json({
